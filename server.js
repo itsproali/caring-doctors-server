@@ -64,6 +64,14 @@ const run = async () => {
         return res.send({ success: true, booking });
       }
     });
+
+    // My Appointment
+    app.get("/myappointment", async (req, res) => {
+      const patientId = req.query.patientId;
+      const query = { patientId };
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    });
   } finally {
     //   client.close()
   }
