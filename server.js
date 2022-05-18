@@ -39,6 +39,24 @@ const run = async () => {
     const bookingCollection = client.db("DoctorsPortal").collection("bookings");
     const userCollection = client.db("DoctorsPortal").collection("users");
 
+    // Create User
+    app.put("/user/:uid", async (req, res) => {
+      const user = req.body;
+      const uid = req.params.uid;
+      const query = { uid };
+      const options = { upsert: true };
+      const updateInfo = {
+        $set: user,
+      };
+      const result = await userCollection.updateOne(query, updateInfo, options);
+      const token = jwt.sign(
+        { userId: user.user.uid },
+        process.env.SECRET_TOKEN,
+        { expiresIn: "12h" }
+      );
+      res.send({ result, token });
+    });
+
     // Get All Services
     app.get("/services", async (req, res) => {
       const query = {};
@@ -95,22 +113,12 @@ const run = async () => {
       }
     });
 
-    // Create User
-    app.put("/user/:uid", async (req, res) => {
-      const user = req.body;
-      const uid = req.params.uid;
-      const query = { uid };
-      const options = { upsert: true };
-      const updateInfo = {
-        $set: user,
-      };
-      const result = await userCollection.updateOne(query, updateInfo, options);
-      const token = jwt.sign(
-        { userId: user.user.uid },
-        process.env.SECRET_TOKEN,
-        { expiresIn: "12h" }
-      );
-      res.send({ result, token });
+    // Get All User
+    app.get("/users", async (req, res) => {
+      const query = {};
+      const cursor = userCollection.find(query);
+      const users = await cursor.toArray();
+      res.send(users);
     });
   } finally {
     //   client.close()
