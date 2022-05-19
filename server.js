@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 var jwt = require("jsonwebtoken");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, Admin } = require("mongodb");
 const port = process.env.PORT || 5000;
 const app = express();
 
@@ -119,6 +119,27 @@ const run = async () => {
       const cursor = userCollection.find(query);
       const users = await cursor.toArray();
       res.send(users);
+    });
+
+    // Make Admin
+    app.put("/user/admin/:uid", verifyJwt, async (req, res) => {
+      const uid = req.params.uid;
+      const requesterUid = req.body.requesterUid;
+      console.log(requesterUid);
+      const requesterAccount = await userCollection.findOne({
+        uid: requesterUid,
+      });
+      if (requesterAccount.role === "admin") {
+        const query = { uid };
+        const role = req.body.role;
+        const updateInfo = {
+          $set: { role },
+        };
+        const result = await userCollection.updateOne(query, updateInfo);
+        res.send(result);
+      } else {
+        res.status(401).send({ message: "Unauthorized Access" });
+      }
     });
   } finally {
     //   client.close()
