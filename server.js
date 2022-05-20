@@ -41,19 +41,26 @@ const run = async () => {
 
     // Create User
     app.put("/user/:uid", async (req, res) => {
+      let updateInfo = {};
       const user = req.body;
       const uid = req.params.uid;
       const query = { uid };
       const options = { upsert: true };
-      const updateInfo = {
-        $set: user,
-      };
+      const existUser = await userCollection.findOne(query);
+      if (!existUser.role) {
+        existUser.role = "user";
+        updateInfo = {
+          $set: existUser,
+        };
+      } else {
+        updateInfo = {
+          $set: user,
+        };
+      }
       const result = await userCollection.updateOne(query, updateInfo, options);
-      const token = jwt.sign(
-        { userId: user.user.uid },
-        process.env.SECRET_TOKEN,
-        { expiresIn: "12h" }
-      );
+      const token = jwt.sign({ uid }, process.env.SECRET_TOKEN, {
+        expiresIn: "12h",
+      });
       res.send({ result, token });
     });
 
@@ -102,7 +109,7 @@ const run = async () => {
 
     // My Appointment
     app.get("/myappointment", verifyJwt, async (req, res) => {
-      const decodeId = req.decoded.userId;
+      const decodeId = req.decoded.uid;
       const patientId = req.query.patientId;
       if (decodeId === patientId) {
         const query = { patientId };
@@ -121,11 +128,10 @@ const run = async () => {
       res.send(users);
     });
 
-    // Make Admin
-    app.put("/user/admin/:uid", verifyJwt, async (req, res) => {
+    // Handle Admin
+    app.put("/user/role/:uid", verifyJwt, async (req, res) => {
       const uid = req.params.uid;
       const requesterUid = req.body.requesterUid;
-      console.log(requesterUid);
       const requesterAccount = await userCollection.findOne({
         uid: requesterUid,
       });
@@ -140,6 +146,14 @@ const run = async () => {
       } else {
         res.status(401).send({ message: "Unauthorized Access" });
       }
+    });
+
+    // Check Admin
+    app.get("/admin/:uid", async (req, res) => {
+      const uid = req.params.uid;
+      const user = await userCollection.findOne({ uid });
+      const isAdmin = user.role === "admin";
+      res.send({ admin: isAdmin });
     });
   } finally {
     //   client.close()
