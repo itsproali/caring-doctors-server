@@ -47,10 +47,14 @@ const run = async () => {
       const query = { uid };
       const options = { upsert: true };
       const existUser = await userCollection.findOne(query);
-      if (!existUser.role) {
-        existUser.role = "user";
+      if (existUser) {
         updateInfo = {
           $set: existUser,
+        };
+      } else if (!user.role) {
+        user.role = "user";
+        updateInfo = {
+          $set: user,
         };
       } else {
         updateInfo = {
@@ -154,6 +158,16 @@ const run = async () => {
       const user = await userCollection.findOne({ uid });
       const isAdmin = user.role === "admin";
       res.send({ admin: isAdmin });
+    });
+
+    // Get Categories
+    app.get("/categories", async (req, res) => {
+      const query = {};
+      const categories = await serviceCollection
+        .find(query)
+        .project({ title: 1 })
+        .toArray();
+      res.send(categories);
     });
   } finally {
     //   client.close()
