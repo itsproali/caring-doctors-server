@@ -38,6 +38,7 @@ const run = async () => {
     const serviceCollection = client.db("DoctorsPortal").collection("services");
     const bookingCollection = client.db("DoctorsPortal").collection("bookings");
     const userCollection = client.db("DoctorsPortal").collection("users");
+    const doctorCollection = client.db("DoctorsPortal").collection("doctors");
 
     // Create User
     app.put("/user/:uid", async (req, res) => {
@@ -168,6 +169,13 @@ const run = async () => {
         .project({ title: 1 })
         .toArray();
       res.send(categories);
+    });
+
+    // Add doctor
+    app.post("/add-doctor", verifyJwt, async (req, res) => {
+      const doctor = req.body;
+      const result = await doctorCollection.insertOne(doctor);
+      res.send(result);
     });
   } finally {
     //   client.close()
